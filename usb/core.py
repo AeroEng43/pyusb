@@ -773,6 +773,8 @@ class Device(_objfinalizer.AutoFinalizedObject):
         else:
             self.speed = None
 
+        self._stopped = [False]
+
     @property
     def langids(self):
         """ Return the USB device's supported language ID codes.
@@ -887,6 +889,10 @@ class Device(_objfinalizer.AutoFinalizedObject):
         self._ctx.dispose(self, False)
         self._ctx.backend.reset_device(self._ctx.handle)
         self._ctx.dispose(self, True)
+        self._stopped[0] = False
+
+    def stop(self):
+        self._stopped[0] = True
 
     def write(self, endpoint, data, timeout = None):
         r"""Write data to the endpoint.
@@ -918,7 +924,8 @@ class Device(_objfinalizer.AutoFinalizedObject):
                 ep.bEndpointAddress,
                 intf.bInterfaceNumber,
                 _interop.as_array(data),
-                self.__get_timeout(timeout)
+                self.__get_timeout(timeout),
+                self._stopped
             )
 
     def read(self, endpoint, size_or_buffer, timeout = None):
@@ -958,7 +965,8 @@ class Device(_objfinalizer.AutoFinalizedObject):
                 ep.bEndpointAddress,
                 intf.bInterfaceNumber,
                 buff,
-                self.__get_timeout(timeout))
+                self.__get_timeout(timeout),
+                self._stopped)
 
         if isinstance(size_or_buffer, array.array):
             return ret
