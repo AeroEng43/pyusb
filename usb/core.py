@@ -894,6 +894,9 @@ class Device(_objfinalizer.AutoFinalizedObject):
     def stop(self):
         self._stopped[0] = True
 
+    def close(self):
+        self._ctx.dispose(self, True)
+
     def write(self, endpoint, data, timeout = None):
         r"""Write data to the endpoint.
 

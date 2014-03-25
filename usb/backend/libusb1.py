@@ -273,6 +273,7 @@ def _get_iso_packet_list(transfer):
     return list_type.from_address(addressof(transfer.iso_packet_desc))
 
 _lib = None
+_libusb = None
 
 def _load_library(find_library=None):
     # Windows backend uses stdcall calling convention
@@ -748,6 +749,7 @@ class _TransferHandler(_objfinalizer.AutoFinalizedObject):
 
     def submit(self, ctx=None, stop=(0,)):
         self.__callback_done = 0
+        self.__usb_error = None
         _check(_lib.libusb_submit_transfer(self.transfer))
 
         tv = _timeval()
@@ -760,6 +762,8 @@ class _TransferHandler(_objfinalizer.AutoFinalizedObject):
         if not self.__callback_done:
             _check(_lib.libusb_cancel_transfer(self.transfer))
             return 0
+        elif self.__usb_error:
+            raise self.__usb_error
 
         return self.__compute_size_transf_data()
 
@@ -767,13 +771,13 @@ class _TransferHandler(_objfinalizer.AutoFinalizedObject):
         return self.transfer.contents.actual_length
 
     def __callback(self, transfer):
-        if transfer.contents.status == LIBUSB_TRANSFER_COMPLETED:
-            self.__callback_done = 1
-        else:
+        if transfer.contents.status != LIBUSB_TRANSFER_COMPLETED:
             status = int(transfer.contents.status)
-            raise usb.USBError(_str_transfer_error[status],
-                               status,
-                               _transfer_errno[status])
+            # Don't actually raise the error until we leave our ctypes call
+            self.__usb_error = usb.USBError(_str_transfer_error[status],
+                                            status,
+                                            _transfer_errno[status])
+        self.__callback_done = 1
 
 class _IsoTransferHandler(_TransferHandler):
     def __init__(self, dev_handle, ep, buff, timeout):
@@ -1001,12 +1005,14 @@ class _LibUSB(usb.backend.IBackend):
         _check(self.lib.libusb_attach_kernel_driver(dev_handle.handle, intf))
 
 def get_backend(find_library=None):
-    global _lib
+    global _lib, _libusb
     try:
         if _lib is None:
             _lib = _load_library(find_library=find_library)
             _setup_prototypes(_lib)
-        return _LibUSB(_lib)
+        if _libusb is None:
+            _libusb = _LibUSB(_lib)
+        return _libusb
     except usb.libloader.LibaryException:
         # exception already logged (if any)
         _logger.error('Error loading libusb 1.0 backend', exc_info=False)
