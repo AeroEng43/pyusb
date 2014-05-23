@@ -761,7 +761,7 @@ class _TransferHandler(_objfinalizer.AutoFinalizedObject):
 
         if not self.__callback_done:
             _check(_lib.libusb_cancel_transfer(self.transfer))
-            return 0
+            raise EOFError()
         elif self.__usb_error:
             raise self.__usb_error
 

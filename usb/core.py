@@ -892,6 +892,7 @@ class Device(_objfinalizer.AutoFinalizedObject):
         self._stopped[0] = False
 
     def stop(self):
+        r"""Stop any pending transfers with an EOFError."""
         self._stopped[0] = True
 
     def close(self):
