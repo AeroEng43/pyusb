@@ -28,7 +28,8 @@
 # NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR
 # MODIFICATIONS.
 
-from distutils.core import setup
+#from distutils.core import setup
+from setuptools import setup
 
 import usb
 
