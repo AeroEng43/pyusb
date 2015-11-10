@@ -14,5 +14,11 @@ else:
             project="Python3.4",
             revision="develop",
             debug=False,
+            stable_required=True),
+        # Only needed to install 'wheel'
+        artifactory_utils.ArtifactSelector(
+            project="EmbeddedPython",
+            revision="develop",
+            debug=False,
             stable_required=True)
     ]
